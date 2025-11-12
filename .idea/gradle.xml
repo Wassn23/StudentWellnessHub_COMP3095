@@ -3,9 +3,29 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/event-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/event-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/goal-tracking-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/goal-tracking-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/wellness-resource-service" />
         <option name="gradleHome" value="$PROJECT_DIR$/../Gradle/gradle-9.2.0" />
-        <option name="gradleJvm" value="openjdk-25" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/wellness-resource-service" />
+          </set>
+        </option>
       </GradleProjectSettings>
     </option>
   </component>

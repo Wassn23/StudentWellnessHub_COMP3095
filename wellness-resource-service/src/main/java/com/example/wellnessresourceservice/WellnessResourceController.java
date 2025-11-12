@@ -1,5 +1,8 @@
 package com.example.wellnessresourceservice;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -7,48 +10,80 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("/resources")
+@RequestMapping("/api/resources")
 public class WellnessResourceController {
-    private final WellnessResourceRepository repo;
 
-    public WellnessResourceController(WellnessResourceRepository repo) {
-        this.repo = repo;
+    private final WellnessResourceRepository repository;
+
+    public WellnessResourceController(WellnessResourceRepository repository) {
+        this.repository = repository;
     }
 
     @GetMapping
-    public List<WellnessResource> all() {
-        return repo.findAll();
+    @Cacheable(value = "resources", key = "'all'")
+    public List<WellnessResource> getAllResources() {
+        System.out.println("Fetching all resources from database...");
+        return repository.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<WellnessResource> one(@PathVariable Long id) {
-        return repo.findById(id)
+    @Cacheable(value = "resources", key = "#id")
+    public ResponseEntity<WellnessResource> getResourceById(@PathVariable Long id) {
+        System.out.println("Fetching resource " + id + " from database...");
+        return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/category/{category}")
+    @Cacheable(value = "resources", key = "'category:' + #category")
+    public List<WellnessResource> getResourcesByCategory(@PathVariable String category) {
+        System.out.println("Fetching resources for category: " + category);
+        return repository.findByCategory(category);
+    }
+
+    @GetMapping("/search")
+    @Cacheable(value = "resources", key = "'search:' + #keyword")
+    public List<WellnessResource> searchResources(@RequestParam String keyword) {
+        System.out.println("Searching resources with keyword: " + keyword);
+        return repository.searchByKeyword(keyword);
+    }
+
     @PostMapping
-    public ResponseEntity<WellnessResource> create(@RequestBody WellnessResource body) {
-        WellnessResource saved = repo.save(body);
-        return ResponseEntity.created(URI.create("/resources/" + saved.getId())).body(saved);
+    @CacheEvict(value = "resources", key = "'all'")
+    public ResponseEntity<WellnessResource> createResource(@RequestBody WellnessResource resource) {
+        WellnessResource saved = repository.save(resource);
+        return ResponseEntity
+                .created(URI.create("/api/resources/" + saved.getResourceId()))
+                .body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<WellnessResource> update(@PathVariable Long id, @RequestBody WellnessResource body) {
-        return repo.findById(id)
+    @CachePut(value = "resources", key = "#id")
+    @CacheEvict(value = "resources", key = "'all'")
+    public ResponseEntity<WellnessResource> updateResource(
+            @PathVariable Long id,
+            @RequestBody WellnessResource resource) {
+
+        return repository.findById(id)
                 .map(existing -> {
-                    existing.setTitle(body.getTitle());
-                    existing.setType(body.getType());
-                    existing.setUrl(body.getUrl());
-                    return ResponseEntity.ok(repo.save(existing));
+                    existing.setTitle(resource.getTitle());
+                    existing.setDescription(resource.getDescription());
+                    existing.setCategory(resource.getCategory());
+                    existing.setUrl(resource.getUrl());
+                    WellnessResource updated = repository.save(existing);
+                    return ResponseEntity.ok(updated);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!repo.existsById(id)) return ResponseEntity.notFound().build();
-        repo.deleteById(id);
+    @CacheEvict(value = "resources", allEntries = true)
+    public ResponseEntity<Void> deleteResource(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

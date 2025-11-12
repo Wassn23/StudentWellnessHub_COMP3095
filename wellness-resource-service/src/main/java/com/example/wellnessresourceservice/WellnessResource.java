@@ -1,33 +1,49 @@
 package com.example.wellnessresourceservice;
 
 import jakarta.persistence.*;
+import java.io.Serializable;
 
 @Entity
-public class WellnessResource {
+@Table(name = "wellness_resources")
+public class WellnessResource implements Serializable {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long resourceId;
 
+    @Column(nullable = false)
     private String title;
-    private String type;   // e.g., "article", "video", "podcast"
+
+    @Column(length = 1000)
+    private String description;
+
+    @Column(nullable = false)
+    private String category;
+
+    @Column(nullable = false)
     private String url;
 
     public WellnessResource() {}
 
-    public WellnessResource(String title, String type, String url) {
+    public WellnessResource(String title, String description, String category, String url) {
         this.title = title;
-        this.type = type;
+        this.description = description;
+        this.category = category;
         this.url = url;
     }
 
-    // getters & setters
-    public Long getId() { return id; }
-    public String getTitle() { return title; }
-    public String getType() { return type; }
-    public String getUrl() { return url; }
+    public Long getResourceId() { return resourceId; }
+    public void setResourceId(Long resourceId) { this.resourceId = resourceId; }
 
-    public void setId(Long id) { this.id = id; }
+    public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
-    public void setType(String type) { this.type = type; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
 }
