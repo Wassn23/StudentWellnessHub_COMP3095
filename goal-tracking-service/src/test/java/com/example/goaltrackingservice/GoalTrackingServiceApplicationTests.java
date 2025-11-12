@@ -123,7 +123,7 @@ class GoalTrackingServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/goals/")
+                .get("api/goals/{id}", id)
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("find {it.id == '%s' }.title".formatted(id), Matchers.equalTo("Stay Hydrated"))

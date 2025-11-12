@@ -176,6 +176,82 @@ class EventServiceApplicationTests {
 
     }
 
+    @Test
+    void updateEventTest() {
+
+        String id = createEventAndReturnId("Nutrition 101", "A workshop about the basics of nutrition",
+                LocalDate.of(2021, 7, 13), "Barrie", 30);
+
+        String requestBody = """
+                
+                    {
+                        "title" : "Nutrition 101",
+                        "description" : "A workshop about the basics of nutrition",
+                        "date" : 2021-07-13,
+                        "location" : "Barrie",
+                        "capacity" : 30
+                    }
+                
+                """;
+
+        RestAssured.given()
+                .body(requestBody)
+                .contentType(ContentType.JSON)
+                .when()
+                .put("/api/events/{id}", id)
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.NO_CONTENT.value())
+                .header("Location", Matchers.equalTo("http://localhost:" + port + "/api/events/" + id));
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("/api/events/{id}", id)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("find {it.id == '%s' }.title".formatted(id), Matchers.equalTo("Nutrition 101"))
+                .body("find {it.id == '%s' }.description".formatted(id), Matchers.equalTo("A workshop about the basics of nutrition"))
+                .body("find {it.id == '%s' }.date".formatted(id), Matchers.equalTo(2021-07-13))
+                .body("find {it.id == '%s' }.location".formatted(id), Matchers.equalTo("Barrie"))
+                .body("find {it.id == '%d' }.capacity".formatted(id), Matchers.equalTo(30));
+
+    }
+
+    @Test
+    void deleteEventTest() {
+
+        String id = createEventAndReturnId("Temp Event", "This is a test event to be disposed",
+                LocalDate.of(2022, 4, 9), "Mississauga", 500);
+
+        // insert new event
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("/api/events/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("id", Matchers.hasItem(id));
+
+        // delete the new event
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .delete("/api/events/{id}", id)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        // verify
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("/api/events/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("id", Matchers.not(Matchers.hasItem(id)));
+
+    }
+
 
 
 
