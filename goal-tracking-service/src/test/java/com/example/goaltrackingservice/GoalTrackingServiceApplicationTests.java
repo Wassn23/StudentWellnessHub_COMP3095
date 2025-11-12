@@ -2,6 +2,7 @@ package com.example.goaltrackingservice;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -93,7 +94,7 @@ class GoalTrackingServiceApplicationTests {
     @Test
     void updateGoalTest(){
 
-        // original product
+        // original goal
         String id = createGoalAndReturnId("Stay Hydrated", "Drink at least 2L of water per day",
                 LocalDate.of(2025, 3, 20), "in-progress", "nutrition");
 
@@ -167,6 +168,92 @@ class GoalTrackingServiceApplicationTests {
                 .body("id", Matchers.not(Matchers.hasItem(id)));
 
     }
+
+    @Test
+    void getAllGoalsTest(){
+
+        // create multiple goals
+        createGoalAndReturnId("Morning Run", "Run 5km every morning",
+                LocalDate.of(2025, 6, 30), "in-progress", "exercise");
+
+        createGoalAndReturnId("Read Daily", "Read for 30 minutes",
+                LocalDate.of(2025, 12, 31), "in-progress", "hobbies");
+
+        createGoalAndReturnId("Stay Hydrated", "Drink 2L of water per day",
+                LocalDate.of(2025, 3, 20), "completed", "nutrition");
+
+        // get all goals
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/goals")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.greaterThanOrEqualTo(3))
+                .body("title", Matchers.hasItems("Morning Run", "Read Daily", "Stay Hydrated"));
+
+    }
+
+    @Test
+    void getGoalsByCategoryTest(){
+
+        // create goals with different categories
+        createGoalAndReturnId("Morning Run", "Run 5km every morning",
+                LocalDate.of(2025, 6, 30), "in-progress", "exercise");
+
+        createGoalAndReturnId("Read Daily", "Read for 30 minutes",
+                LocalDate.of(2025, 12, 31), "in-progress", "hobbies");
+
+        createGoalAndReturnId("Evening Yoga", "Practice yoga for 20 minutes",
+                LocalDate.of(2025, 6, 30), "in-progress", "exercise");
+
+        // query for exercise category
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .queryParam("category", "exercise")
+                .when()
+                .get("api/goals/")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.equalTo(2))
+                .body("title", Matchers.hasItems("Morning Run, Evening Yoga"))
+                .body("category", Matchers.everyItem(Matchers.equalTo("exercise")));
+
+    }
+
+    @Test
+    void getGoalsByStatusTest(){
+
+        // create goals with different statuses
+        createGoalAndReturnId("Completed Goal 1", "This goal is done",
+                LocalDate.of(2025, 1, 15), "completed", "exercise");
+
+        createGoalAndReturnId("Active Goal", "Currently working on this",
+                LocalDate.of(2025, 8, 20), "in-progress", "nutrition");
+
+        createGoalAndReturnId("Completed Goal 2", "Another goal complete!",
+                LocalDate.of(2025, 9, 10), "completed", "wellness");
+
+        // query for completed status
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .queryParam("status", "completed")
+                .when()
+                .get("api/goals/")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.equalTo(2))
+                .body("title", Matchers.hasItems("Completed Goal 1", "Completed Goal 2"))
+                .body("status", Matchers.everyItem(Matchers.equalTo("completed")));
+
+    }
+
+
+
+
 
 
 
