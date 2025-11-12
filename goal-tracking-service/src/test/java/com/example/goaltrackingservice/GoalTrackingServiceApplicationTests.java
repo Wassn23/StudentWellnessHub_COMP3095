@@ -113,7 +113,7 @@ class GoalTrackingServiceApplicationTests {
                 .body(requestBody)
                 .contentType(ContentType.JSON)
                 .when()
-                .put("api/goals/{id}" + id)
+                .put("api/goals/{id}", id)
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.NO_CONTENT.value())
@@ -130,6 +130,41 @@ class GoalTrackingServiceApplicationTests {
                 .body("find {it.id == '%s' }.targetDate".formatted(id), Matchers.equalTo(2025-03-20))
                 .body("find {it.id == '%s' }.status".formatted(id), Matchers.equalTo("in-progress"))
                 .body("find {it.id == '%s' }.category".formatted(id), Matchers.equalTo("nutrition"));
+
+    }
+
+    @Test
+    void deleteGoalTest(){
+
+        // original goal
+        String id = createGoalAndReturnId("Temp Goal", "This is a test goal to be disposed",
+                LocalDate.of(2023, 12, 15), "completed", "exercise");
+
+        // inserted new goal
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/goals/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("id", Matchers.hasItem(id));
+
+        // delete new goal
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .delete("api/goals/{id}", id)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        // verify deletion
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/goals/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("id", Matchers.not(Matchers.hasItem(id)));
 
     }
 
