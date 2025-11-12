@@ -248,7 +248,7 @@ class EventServiceApplicationTests {
                 .get("/api/events/")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("id", Matchers.not(Matchers.hasItem(id)));
+                .body("eventId", Matchers.not(Matchers.hasItem(id)));
 
     }
 

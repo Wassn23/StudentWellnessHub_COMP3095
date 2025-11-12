@@ -82,7 +82,7 @@ class WellnessResourceServiceApplicationTests {
                     {
                         "title" : "Mental Health Hotline",
                         "description" : "24/7 crisis support line",
-                        "category" : "crisis management",
+                        "category" : "counseling",
                         "url" : "https://example.com/hotline"
                     }
               
@@ -162,9 +162,66 @@ class WellnessResourceServiceApplicationTests {
 
     }
 
+    @Test
+    void updateResourceTest(){
 
+        String id = createResourceAndReturnId("Suicide Prevention Hotline", "24/7 help", "counseling", "https://example.com/hotline");
 
+        String requestBody = """
+                
+                    {
+                        "title" : "Suicide Prevention Hotline",
+                        "description" : "24/7 help with multilingual services",
+                        "category" : "counseling",
+                        "url" : "https://example.com/hotline-updated"
+                    }
+                
+                """;
 
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/resources/{id}", id)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("title", Matchers.equalTo("Suicide Prevention Hotline"))
+                .body("description", Matchers.equalTo("24/7 help with multilingual services"))
+                .body("category", Matchers.equalTo("counseling"))
+                .body("url", Matchers.equalTo("https://example.com/hotline-updated"));
 
+    }
+
+    @Test
+    void deleteResourceTest(){
+
+        String id = createResourceAndReturnId("Temp Resource", "Resource to be disposed of", "mindfulness", "https://example.com/temp");
+
+        // insert temp resource
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/resources/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("id", Matchers.hasItem(id));
+
+        // delete temp resource
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .delete("api/resources/{id}", id)
+                .then()
+                .statusCode(HttpStatus.NO_CONTENT.value());
+
+        // verify deletion
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("api/resources/")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .body("resourceId", Matchers.not(Matchers.hasItem(id)));
+
+    }
 
 }

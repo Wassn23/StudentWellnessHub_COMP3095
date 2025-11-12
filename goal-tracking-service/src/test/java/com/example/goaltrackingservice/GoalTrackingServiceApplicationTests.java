@@ -165,7 +165,7 @@ class GoalTrackingServiceApplicationTests {
                 .get("api/goals/")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("id", Matchers.not(Matchers.hasItem(id)));
+                .body("goalId", Matchers.not(Matchers.hasItem(id)));
 
     }
 
