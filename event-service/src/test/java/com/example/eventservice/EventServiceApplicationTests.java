@@ -100,5 +100,83 @@ class EventServiceApplicationTests {
 
     }
 
+    @Test
+    void getAllEventsTest() {
+
+        createEventAndReturnId("Charity Event", "Charity event for raising awareness for mental health",
+                LocalDate.of(2000, 4, 12), "Markham", 1000);
+
+        createEventAndReturnId("Marathon", "25km marathon",
+                LocalDate.of(2013, 3, 9), "Vaughan", 50);
+
+        createEventAndReturnId("Wellness Convention", "Meet wellness gurus and mental health experts",
+                LocalDate.of(2020, 6, 20), "Toronto", 5000);
+
+        // get all events
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("/api/events")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.equalTo(3))
+                .body("title", Matchers.hasItems("Charity Event", "Marathon", "Wellness Convention"));
+    }
+
+    @Test
+    void getEventByDateTest() {
+
+        createEventAndReturnId("Event 1", "Description for event 1",
+                LocalDate.of(2025, 10, 15), "Toronto", 50);
+
+        createEventAndReturnId("Event 2", "Description for event 2",
+                LocalDate.of(2025, 10, 15), "Vaughan", 100);
+
+        createEventAndReturnId("Event 3", "Description for event 3",
+                LocalDate.of(2025, 10, 20), "Toronto", 250);
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .queryParam("date", LocalDate.of(2025, 10, 15))
+                .when()
+                .get("/api/events/{date}")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.equalTo(2))
+                .body("title", Matchers.hasItems("Event 1", "Event 2"))
+                .body("date", Matchers.everyItem(Matchers.equalTo(LocalDate.of(2025, 10, 15))));
+
+    }
+
+    @Test
+    void getEventByLocationTest(){
+
+        createEventAndReturnId("Event 4", "Description for event 4",
+                LocalDate.of(2025, 11, 15), "Toronto", 50);
+
+        createEventAndReturnId("Event 5", "Description for event 5",
+                LocalDate.of(2025, 11, 15), "Vaughan", 100);
+
+        createEventAndReturnId("Event 6", "Description for event 6",
+                LocalDate.of(2025, 11, 4), "Toronto", 250);
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .queryParam("location", "Toronto")
+                .when()
+                .get("/api/events/location/{location}")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body("size()", Matchers.equalTo(2))
+                .body("title", Matchers.hasItems("Event 4", "Event 6"))
+                .body("location", Matchers.everyItem(Matchers.equalTo("Toronto")));
+
+    }
+
+
+
 
 }
