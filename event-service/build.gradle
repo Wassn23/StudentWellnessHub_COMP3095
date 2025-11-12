@@ -28,6 +28,10 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation("io.rest-assured:rest-assured")
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign:4.3.0")
+    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner:4.3.0")
+
 }
 
 tasks.named('test') {
