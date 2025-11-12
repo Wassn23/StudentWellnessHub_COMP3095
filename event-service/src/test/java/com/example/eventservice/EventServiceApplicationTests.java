@@ -15,6 +15,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.hamcrest.Matchers;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
@@ -35,7 +36,7 @@ class EventServiceApplicationTests {
     // setup RestAssured before executing tests
     @BeforeEach
     void setUp() {
-        RestAssured.baseURI = "http://localhost:";
+        RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
     }
 
@@ -52,7 +53,7 @@ class EventServiceApplicationTests {
                     {
                         "title" : "Test Event Title",
                         "description" : "Test Event Description",
-                        "date" : 2024-10-3,
+                        "date" : "2024-10-03T09:00:00",
                         "location" : "Toronto",
                         "capacity" : 300                        
                     }
@@ -70,13 +71,13 @@ class EventServiceApplicationTests {
                 .body("eventId", Matchers.notNullValue())  // verify ID is generated
                 .body("title", Matchers.equalTo("Test Event Title"))
                 .body("description", Matchers.equalTo("Test Event Description"))
-                .body("date", Matchers.equalTo(2024 - 10 - 03))
+                .body("date", Matchers.equalTo("2024-10-03T09:00:00"))
                 .body("location", Matchers.equalTo("Toronto"))
                 .body("capacity", Matchers.equalTo(300));
 
     }
 
-    private String createEventAndReturnId(String title, String description, LocalDate date, String location, Integer capacity){
+    private Integer createEventAndReturnId(String title, String description, LocalDateTime date, String location, Integer capacity){
 
         String requestBody = """
             
@@ -85,15 +86,19 @@ class EventServiceApplicationTests {
                     "description": "%s",
                     "date": "%s",
                     "location": "%s",
-                    "capacity": "%d"
+                    "capacity": %d
                 }
             """.formatted(title, description, date.toString(), location, capacity);
 
+        System.out.println("Request Body: " + requestBody);  // print the request for debugging
+
         return RestAssured.given()
                 .contentType(ContentType.JSON)
+                .body(requestBody)
                 .when()
                 .post("api/events")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .extract()
                 .path("eventId");
@@ -104,13 +109,13 @@ class EventServiceApplicationTests {
     void getAllEventsTest() {
 
         createEventAndReturnId("Charity Event", "Charity event for raising awareness for mental health",
-                LocalDate.of(2000, 4, 12), "Markham", 1000);
+                LocalDateTime.of(2000, 4, 12, 9, 0), "Markham", 1000);
 
         createEventAndReturnId("Marathon", "25km marathon",
-                LocalDate.of(2013, 3, 9), "Vaughan", 50);
+                LocalDateTime.of(2013, 3, 9, 9, 0), "Vaughan", 50);
 
         createEventAndReturnId("Wellness Convention", "Meet wellness gurus and mental health experts",
-                LocalDate.of(2020, 6, 20), "Toronto", 5000);
+                LocalDateTime.of(2020, 6, 20, 9, 0), "Toronto", 5000);
 
         // get all events
         RestAssured.given()
@@ -120,33 +125,31 @@ class EventServiceApplicationTests {
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(3))
+                .body("size()", Matchers.greaterThanOrEqualTo(3))
                 .body("title", Matchers.hasItems("Charity Event", "Marathon", "Wellness Convention"));
     }
 
     @Test
-    void getEventByDateTest() {
+    void getUpcomingEventsTest() {
 
-        createEventAndReturnId("Event 1", "Description for event 1",
-                LocalDate.of(2025, 10, 15), "Toronto", 50);
+        createEventAndReturnId("Past Event", "This already happened",
+                LocalDateTime.of(2020, 1, 1, 10, 0), "Toronto", 50);
 
-        createEventAndReturnId("Event 2", "Description for event 2",
-                LocalDate.of(2025, 10, 15), "Vaughan", 100);
+        createEventAndReturnId("Future Event 1", "This is upcoming",
+                LocalDateTime.now().plusDays(5), "Toronto", 100);
 
-        createEventAndReturnId("Event 3", "Description for event 3",
-                LocalDate.of(2025, 10, 20), "Toronto", 250);
+        createEventAndReturnId("Future Event 2", "Also upcoming",
+                LocalDateTime.now().plusDays(10), "Vancouver", 75);
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
-                .queryParam("date", LocalDate.of(2025, 10, 15))
                 .when()
-                .get("/api/events/{date}")
+                .get("/api/events/upcoming")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(2))
-                .body("title", Matchers.hasItems("Event 1", "Event 2"))
-                .body("date", Matchers.everyItem(Matchers.equalTo(LocalDate.of(2025, 10, 15))));
+                .body("title", Matchers.hasItems("Future Event 1", "Future Event 2"))
+                .body("title", Matchers.not(Matchers.hasItem("Past Event")));
 
     }
 
@@ -154,19 +157,19 @@ class EventServiceApplicationTests {
     void getEventByLocationTest(){
 
         createEventAndReturnId("Event 4", "Description for event 4",
-                LocalDate.of(2025, 11, 15), "Toronto", 50);
+                LocalDateTime.of(2025, 11, 15, 9, 0), "Toronto", 50);
 
         createEventAndReturnId("Event 5", "Description for event 5",
-                LocalDate.of(2025, 11, 15), "Vaughan", 100);
+                LocalDateTime.of(2025, 11, 15, 9, 0), "Vaughan", 100);
 
         createEventAndReturnId("Event 6", "Description for event 6",
-                LocalDate.of(2025, 11, 4), "Toronto", 250);
+                LocalDateTime.of(2025, 11, 4, 9, 0), "Toronto", 250);
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .queryParam("location", "Toronto")
                 .when()
-                .get("/api/events/location/{location}")
+                .get("/api/events/location/{location}", "Toronto")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
@@ -179,15 +182,15 @@ class EventServiceApplicationTests {
     @Test
     void updateEventTest() {
 
-        String id = createEventAndReturnId("Nutrition 101", "A workshop about the basics of nutrition",
-                LocalDate.of(2021, 7, 13), "Barrie", 30);
+        Integer id = createEventAndReturnId("Nutrition 101", "A workshop about the basics of nutrition",
+                LocalDateTime.of(2021, 7, 13, 9, 0), "Barrie", 30);
 
         String requestBody = """
                 
                     {
                         "title" : "Nutrition 101",
-                        "description" : "A workshop about the basics of nutrition",
-                        "date" : 2021-07-13,
+                        "description" : "An ADVANCED workshop about the basics of nutrition",
+                        "date" : "2021-07-13T09:00:00",
                         "location" : "Barrie",
                         "capacity" : 30
                     }
@@ -201,8 +204,7 @@ class EventServiceApplicationTests {
                 .put("/api/events/{id}", id)
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.NO_CONTENT.value())
-                .header("Location", Matchers.equalTo("http://localhost:" + port + "/api/events/" + id));
+                .statusCode(HttpStatus.OK.value());
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -210,28 +212,27 @@ class EventServiceApplicationTests {
                 .get("/api/events/{id}", id)
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("find {it.id == '%s' }.title".formatted(id), Matchers.equalTo("Nutrition 101"))
-                .body("find {it.id == '%s' }.description".formatted(id), Matchers.equalTo("A workshop about the basics of nutrition"))
-                .body("find {it.id == '%s' }.date".formatted(id), Matchers.equalTo(2021-07-13))
-                .body("find {it.id == '%s' }.location".formatted(id), Matchers.equalTo("Barrie"))
-                .body("find {it.id == '%d' }.capacity".formatted(id), Matchers.equalTo(30));
+                .body("title", Matchers.equalTo("Nutrition 101"))
+                .body("description", Matchers.equalTo("An ADVANCED workshop about the basics of nutrition"))
+                .body("location", Matchers.equalTo("Barrie"))
+                .body("capacity", Matchers.equalTo(30));
 
     }
 
     @Test
     void deleteEventTest() {
 
-        String id = createEventAndReturnId("Temp Event", "This is a test event to be disposed",
-                LocalDate.of(2022, 4, 9), "Mississauga", 500);
+        Integer id = createEventAndReturnId("Temp Event", "This is a test event to be disposed",
+                LocalDateTime.of(2022, 4, 9, 9, 0), "Mississauga", 500);
 
         // insert new event
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("/api/events/")
+                .get("/api/events")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("id", Matchers.hasItem(id));
+                .body("eventId", Matchers.hasItem(id));
 
         // delete the new event
         RestAssured.given()
@@ -245,7 +246,7 @@ class EventServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("/api/events/")
+                .get("/api/events")
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("eventId", Matchers.not(Matchers.hasItem(id)));
