@@ -42,6 +42,10 @@ public class WellnessResourceController {
 //                .orElse(ResponseEntity.notFound().build());
     }
 
+    /*
+    * ResponseEntity was not being handled properly by Redis, so we created a helper method that returns a
+    * WellnessResource object so that we are able to cache that instead
+    * */
     @Cacheable(value = "resources", key = "#id")
     public WellnessResource getCachedResource(Long id) {
         return repository.findById(id).orElse(null);
