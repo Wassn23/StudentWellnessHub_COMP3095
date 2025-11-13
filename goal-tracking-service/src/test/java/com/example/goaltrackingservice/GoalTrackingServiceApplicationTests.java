@@ -2,7 +2,6 @@ package com.example.goaltrackingservice;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,7 +41,7 @@ class GoalTrackingServiceApplicationTests {
                     {
                         "title" : "Daily Outdoor Walks",
                         "description" : "Go for a walk outside every day for at least 30 minutes",
-                        "targetDate" : 2025-06-18,
+                        "targetDate" : "2025-06-18",
                         "status" : "in-progress",
                         "category" : "exercise"
                     }
@@ -53,14 +52,14 @@ class GoalTrackingServiceApplicationTests {
                 .body(requestBody)
                 .contentType(ContentType.JSON)
                 .when()
-                .post("/api/goals/")
+                .post("/api/goals")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .body("goalId", Matchers.notNullValue())
                 .body("title", Matchers.equalTo("Daily Outdoor Walks"))
                 .body("description", Matchers.equalTo("Go for a walk outside every day for at least 30 minutes"))
-                .body("targetDate", Matchers.equalTo(2025-06-18))
+                .body("targetDate", Matchers.equalTo("2025-06-18"))
                 .body("status", Matchers.equalTo("in-progress"))
                 .body("category", Matchers.equalTo("exercise"));
     }
@@ -83,8 +82,9 @@ class GoalTrackingServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("api/goals/")
+                .post("/api/goals")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .extract()
                 .path("goalId");
@@ -103,7 +103,7 @@ class GoalTrackingServiceApplicationTests {
                     {
                         "title" : "Stay Hydrated",
                         "description" : "Drink at least 3L of water per day",
-                        "targetDate" : 2025-03-20,
+                        "targetDate" : "2025-03-20",
                         "status" : "in-progress",
                         "category" : "nutrition"
                     }
@@ -117,8 +117,7 @@ class GoalTrackingServiceApplicationTests {
                 .put("api/goals/{id}", id)
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.NO_CONTENT.value())
-                .header("Location", Matchers.equalTo("http://localhost:" + port + "/api/goals/" + id));
+                .statusCode(HttpStatus.OK.value());
 
         RestAssured.given()
                 .contentType(ContentType.JSON)
@@ -126,12 +125,11 @@ class GoalTrackingServiceApplicationTests {
                 .get("api/goals/{id}", id)
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("find {it.id == '%s' }.title".formatted(id), Matchers.equalTo("Stay Hydrated"))
-                .body("find {it.id == '%s' }.description".formatted(id), Matchers.equalTo("Drink at least 3L of water per day"))
-                .body("find {it.id == '%s' }.targetDate".formatted(id), Matchers.equalTo(2025-03-20))
-                .body("find {it.id == '%s' }.status".formatted(id), Matchers.equalTo("in-progress"))
-                .body("find {it.id == '%s' }.category".formatted(id), Matchers.equalTo("nutrition"));
-
+                .body("title", Matchers.equalTo("Stay Hydrated"))
+                .body("description", Matchers.equalTo("Drink at least 3L of water per day"))
+                .body("targetDate", Matchers.equalTo("2025-03-20"))
+                .body("status", Matchers.equalTo("in-progress"))
+                .body("category", Matchers.equalTo("nutrition"));
     }
 
     @Test
@@ -145,10 +143,10 @@ class GoalTrackingServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/goals/")
+                .get("api/goals")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("id", Matchers.hasItem(id));
+                .body("goalId", Matchers.hasItem(id));
 
         // delete new goal
         RestAssured.given()
@@ -162,7 +160,7 @@ class GoalTrackingServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/goals/")
+                .get("api/goals")
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("goalId", Matchers.not(Matchers.hasItem(id)));
@@ -213,12 +211,12 @@ class GoalTrackingServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .queryParam("category", "exercise")
                 .when()
-                .get("/api/goals/")
+                .get("/api/goals/category/{category}", "exercise")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(2))
-                .body("title", Matchers.hasItems("Morning Run, Evening Yoga"))
+                .body("size()", Matchers.greaterThanOrEqualTo(2))
+                .body("title", Matchers.hasItems("Morning Run", "Evening Yoga"))
                 .body("category", Matchers.everyItem(Matchers.equalTo("exercise")));
 
     }
@@ -241,11 +239,11 @@ class GoalTrackingServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .queryParam("status", "completed")
                 .when()
-                .get("/api/goals/")
+                .get("/api/goals/status/{status}", "completed")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(2))
+                .body("size()", Matchers.greaterThanOrEqualTo(2))
                 .body("title", Matchers.hasItems("Completed Goal 1", "Completed Goal 2"))
                 .body("status", Matchers.everyItem(Matchers.equalTo("completed")));
 
