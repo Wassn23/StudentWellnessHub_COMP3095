@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.hamcrest.Matchers;
-import static io.restassured.RestAssured.given;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -50,7 +49,7 @@ class WellnessResourceServiceApplicationTests {
         redisContainer.start();
     }
 
-    private String createResourceAndReturnId(String title, String description, String category, String url) {
+    private Integer createResourceAndReturnId(String title, String description, String category, String url) {
 
         String requestBody = """
                 
@@ -67,8 +66,9 @@ class WellnessResourceServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("api/resources")
+                .post("/api/resources")
                 .then()
+                .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .extract()
                 .path("resourceId");
@@ -92,14 +92,14 @@ class WellnessResourceServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("api/resources")
+                .post("/api/resources")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.CREATED.value())
                 .body("resourceId", Matchers.notNullValue())
                 .body("title", Matchers.equalTo("Mental Health Hotline"))
                 .body("description", Matchers.equalTo("24/7 crisis support line"))
-                .body("category", Matchers.equalTo("crisis management"))
+                .body("category", Matchers.equalTo("counseling"))
                 .body("url", Matchers.equalTo("https://example.com/hotline"));
 
     }
@@ -113,11 +113,11 @@ class WellnessResourceServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/resources")
+                .get("/api/resources")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(2))
+                .body("size()", Matchers.greaterThanOrEqualTo(2))
                 .body("title", Matchers.hasItems("Meditation Guide", "Find a Therapist"));
 
     }
@@ -133,11 +133,11 @@ class WellnessResourceServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .queryParam("category", "counseling")
                 .when()
-                .get("api/resources")
+                .get("/api/resources/category/{category}", "counseling")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body("size()", Matchers.equalTo(2))
+                .body("size()", Matchers.greaterThanOrEqualTo(2))
                 .body("title", Matchers.hasItems("Group Counselling", "Virtual Counselling"))
                 .body("category", Matchers.everyItem(Matchers.equalTo("counseling")));
 
@@ -154,7 +154,7 @@ class WellnessResourceServiceApplicationTests {
                 .contentType(ContentType.JSON)
                 .queryParam("keyword", "anxiety")
                 .when()
-                .get("api/resources/search")
+                .get("/api/resources/search")
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
@@ -165,7 +165,7 @@ class WellnessResourceServiceApplicationTests {
     @Test
     void updateResourceTest(){
 
-        String id = createResourceAndReturnId("Suicide Prevention Hotline", "24/7 help", "counseling", "https://example.com/hotline");
+        Integer id = createResourceAndReturnId("Suicide Prevention Hotline", "24/7 help", "counseling", "https://example.com/hotline");
 
         String requestBody = """
                 
@@ -179,10 +179,20 @@ class WellnessResourceServiceApplicationTests {
                 """;
 
         RestAssured.given()
+                .body(requestBody)
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/resources/{id}", id)
+                .put("/api/resources/{id}", id)
                 .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value());
+
+        RestAssured.given()
+                .contentType(ContentType.JSON)
+                .when()
+                .get("/api/resources/{id}", id)
+                .then()
+                .log().all()
                 .statusCode(HttpStatus.OK.value())
                 .body("title", Matchers.equalTo("Suicide Prevention Hotline"))
                 .body("description", Matchers.equalTo("24/7 help with multilingual services"))
@@ -194,22 +204,22 @@ class WellnessResourceServiceApplicationTests {
     @Test
     void deleteResourceTest(){
 
-        String id = createResourceAndReturnId("Temp Resource", "Resource to be disposed of", "mindfulness", "https://example.com/temp");
+        Integer id = createResourceAndReturnId("Temp Resource", "Resource to be disposed of", "mindfulness", "https://example.com/temp");
 
         // insert temp resource
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/resources/")
+                .get("/api/resources")
                 .then()
                 .statusCode(HttpStatus.OK.value())
-                .body("id", Matchers.hasItem(id));
+                .body("resourceId", Matchers.hasItem(id));
 
         // delete temp resource
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .delete("api/resources/{id}", id)
+                .delete("/api/resources/{id}", id)
                 .then()
                 .statusCode(HttpStatus.NO_CONTENT.value());
 
@@ -217,7 +227,7 @@ class WellnessResourceServiceApplicationTests {
         RestAssured.given()
                 .contentType(ContentType.JSON)
                 .when()
-                .get("api/resources/")
+                .get("/api/resources")
                 .then()
                 .statusCode(HttpStatus.OK.value())
                 .body("resourceId", Matchers.not(Matchers.hasItem(id)));

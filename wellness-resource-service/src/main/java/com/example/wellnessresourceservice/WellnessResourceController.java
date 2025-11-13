@@ -27,12 +27,24 @@ public class WellnessResourceController {
     }
 
     @GetMapping("/{id}")
-    @Cacheable(value = "resources", key = "#id")
+//    @Cacheable(value = "resources", key = "#id")
     public ResponseEntity<WellnessResource> getResourceById(@PathVariable Long id) {
         System.out.println("Fetching resource " + id + " from database...");
-        return repository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+
+        WellnessResource resource = getCachedResource(id);
+        if (resource != null) {
+            return ResponseEntity.ok(resource);
+        }
+        return ResponseEntity.notFound().build();
+
+//        return repository.findById(id)
+//                .map(ResponseEntity::ok)
+//                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Cacheable(value = "resources", key = "#id")
+    public WellnessResource getCachedResource(Long id) {
+        return repository.findById(id).orElse(null);
     }
 
     @GetMapping("/category/{category}")
@@ -59,8 +71,8 @@ public class WellnessResourceController {
     }
 
     @PutMapping("/{id}")
-    @CachePut(value = "resources", key = "#id")
-    @CacheEvict(value = "resources", key = "'all'")
+//    @CachePut(value = "resources", key = "#id")
+    @CacheEvict(value = "resources", allEntries = true)
     public ResponseEntity<WellnessResource> updateResource(
             @PathVariable Long id,
             @RequestBody WellnessResource resource) {
