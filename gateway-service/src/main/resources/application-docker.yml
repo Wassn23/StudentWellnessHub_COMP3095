@@ -1,0 +1,42 @@
+server:
+  port: 8222
+
+spring:
+  application:
+    name: gateway-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/student-wellness
+
+  cloud:
+    gateway:
+      routes:
+        - id: event-service
+          uri: http://event-service:8083
+          predicates:
+            - Path=/api/events/**
+          filters:
+            - StripPrefix=1
+
+        - id: wellness-service
+          uri: http://wellness-service:8081
+          predicates:
+            - Path=/api/wellness/**
+          filters:
+            - StripPrefix=1
+
+        - id: goal-tracking-service
+          uri: http://goal-tracking-service:8082
+          predicates:
+            - Path=/api/goals/**
+          filters:
+            - StripPrefix=1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/mock-resources")
+@RequestMapping("/api/wellness")
 public class MockWellnessController {
 
     @GetMapping("/category/{category}")
