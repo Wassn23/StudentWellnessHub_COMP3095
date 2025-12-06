@@ -1,0 +1,60 @@
+{
+  "realm": "student-wellness",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": true,
+
+  "clients": [
+    {
+      "clientId": "gateway-client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "GATEWAY-SECRET-123",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ],
+
+  "roles": {
+    "realm": [
+      { "name": "ROLE_STUDENT" },
+      { "name": "ROLE_STAFF" }
+    ]
+  },
+
+  "users": [
+    {
+      "username": "student",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_STUDENT"]
+    },
+    {
+      "username": "staff",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ROLE_STAFF"]
+    }
+  ]
+}

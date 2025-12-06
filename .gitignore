@@ -1,0 +1,10 @@
+docker-data/
+keycloak-data/
+kafka-data/
+schema-registry-data/
+volumes/
+.env
+*.zip
+*.tar
+*.log
+.DS_Store
