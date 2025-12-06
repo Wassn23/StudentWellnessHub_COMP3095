@@ -1,8 +1,13 @@
 package com.example.goaltrackingservice;
 
+import com.example.goaltrackingservice.model.GoalCompletedEvent;
+import com.example.goaltrackingservice.service.GoalEventProducer;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -10,9 +15,11 @@ import java.util.List;
 public class GoalController {
 
     private final GoalRepository repository;
+    private final GoalEventProducer producer;
 
-    public GoalController(GoalRepository repository) {
+    public GoalController(GoalRepository repository, GoalEventProducer producer) {
         this.repository = repository;
+        this.producer = producer;
     }
 
     @GetMapping
@@ -61,11 +68,22 @@ public class GoalController {
     }
 
     @PatchMapping("/{id}/complete")
-    public ResponseEntity<Goal> completeGoal(@PathVariable String id) {
+    public ResponseEntity<?> completeGoal(@PathVariable String id) {
+
         return repository.findById(id)
                 .map(goal -> {
                     goal.setStatus("completed");
-                    return ResponseEntity.ok(repository.save(goal));
+                    repository.save(goal);
+
+                    GoalCompletedEvent event = new GoalCompletedEvent(
+                            goal.getGoalId(),
+                            "user-123",
+                            Instant.now().toString()
+                    );
+
+                    producer.sendGoalCompletedEvent(event);
+
+                    return ResponseEntity.ok(goal);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
